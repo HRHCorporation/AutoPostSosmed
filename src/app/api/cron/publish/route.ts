@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { publishLinkedInPost, addLinkedInComment } from '@/utils/linkedin'
 
 export async function GET(req: Request) {
   try {
@@ -8,15 +9,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Use anon/service role key because cron runs without user session
-    const supabaseUrls = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
     
-    if(!supabaseUrls || !supabaseServiceKey) {
+    if(!supabaseUrl || !supabaseServiceKey) {
         return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
     }
 
-    const supabase = createClient(supabaseUrls, supabaseServiceKey)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Fetch scheduled posts that are due
     const { data: duePosts, error } = await supabase
@@ -32,7 +32,6 @@ export async function GET(req: Request) {
     }
 
     for (const post of duePosts) {
-      // Fetch LinkedIn access token and user URN
       const { data: account } = await supabase
         .from('social_accounts')
         .select('access_token, provider_user_id')
@@ -46,33 +45,24 @@ export async function GET(req: Request) {
       }
 
       try {
-        const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${account.access_token}`,
-            'X-Restli-Protocol-Version': '2.0.0',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            author: account.provider_user_id,
-            lifecycleState: 'PUBLISHED',
-            specificContent: {
-              'com.linkedin.ugc.ShareContent': {
-                shareCommentary: {
-                  text: post.content,
-                },
-                shareMediaCategory: 'NONE',
-              },
-            },
-            visibility: {
-              'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
-            },
-          }),
-        })
+        const postUrn = await publishLinkedInPost(
+          account.access_token,
+          account.provider_user_id,
+          post.content
+        )
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(`LinkedIn API error: ${JSON.stringify(errorData)}`)
+        // Post first comment if exists
+        if (post.first_comment) {
+          try {
+            await addLinkedInComment(
+              account.access_token,
+              postUrn,
+              account.provider_user_id,
+              post.first_comment
+            )
+          } catch (commentErr) {
+            console.error(`Failed to add first comment for post ${post.id}:`, commentErr)
+          }
         }
 
         // Mark as published
