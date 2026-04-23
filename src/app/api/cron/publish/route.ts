@@ -32,30 +32,48 @@ export async function GET(req: Request) {
     }
 
     for (const post of duePosts) {
-      // Fetch LinkedIn access token
+      // Fetch LinkedIn access token and user URN
       const { data: account } = await supabase
         .from('social_accounts')
-        .select('access_token')
+        .select('access_token, provider_user_id')
         .eq('user_id', post.user_id)
         .eq('provider', 'linkedin')
         .single()
 
-      if (!account?.access_token) {
-        console.error(`No LinkedIn account found for user ${post.user_id}`)
+      if (!account?.access_token || !account?.provider_user_id) {
+        console.error(`No complete LinkedIn account found for user ${post.user_id}`)
         continue
       }
 
       try {
-        // LinkedIn API call for UGC POST goes here
-        // We simulate the fetch for this boilerplate
-        console.log(`Publishing post ${post.id} for user ${post.user_id} via LinkedIn API...`)
-        
-        // Example: 
-        // await fetch('https://api.linkedin.com/v2/ugcPosts', {
-        //   method: 'POST',
-        //   headers: { 'Authorization': `Bearer ${account.access_token}`, ... },
-        //   body: JSON.stringify({...})
-        // })
+        const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${account.access_token}`,
+            'X-Restli-Protocol-Version': '2.0.0',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            author: account.provider_user_id,
+            lifecycleState: 'PUBLISHED',
+            specificContent: {
+              'com.linkedin.ugc.ShareContent': {
+                shareCommentary: {
+                  text: post.content,
+                },
+                shareMediaCategory: 'NONE',
+              },
+            },
+            visibility: {
+              'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
+            },
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(`LinkedIn API error: ${JSON.stringify(errorData)}`)
+        }
 
         // Mark as published
         await supabase
@@ -63,6 +81,7 @@ export async function GET(req: Request) {
           .update({ status: 'published', published_at: new Date().toISOString() })
           .eq('id', post.id)
 
+        console.log(`Successfully published post ${post.id}`)
       } catch (err) {
         console.error(`Failed to publish post ${post.id}`, err)
       }

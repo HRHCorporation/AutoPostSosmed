@@ -11,9 +11,11 @@ CREATE TABLE social_accounts (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   provider text NOT NULL,
+  provider_user_id text, -- LinkedIn URN (e.g. urn:li:person:ABC123)
   access_token text NOT NULL,
   expires_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now() NOT NULL
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  UNIQUE(user_id, provider)
 );
 
 -- Table: posts

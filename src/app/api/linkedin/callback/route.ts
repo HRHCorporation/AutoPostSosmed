@@ -43,15 +43,23 @@ export async function GET(req: Request) {
     const data = await response.json()
 
     if (data.access_token) {
+      // Fetch LinkedIn profile to get the URN (sub or id)
+      const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
+        headers: { 'Authorization': `Bearer ${data.access_token}` }
+      })
+      const profileData = await profileResponse.json()
+      const linkedinUrn = `urn:li:person:${profileData.id}`
+
       // Save token in DB
       const expiresAt = new Date(Date.now() + (data.expires_in * 1000)).toISOString()
       
       await supabase.from('social_accounts').upsert({
         user_id: user.id,
         provider: 'linkedin',
+        provider_user_id: linkedinUrn,
         access_token: data.access_token,
         expires_at: expiresAt
-      }, { onConflict: 'user_id, provider' })
+      })
 
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?success=true`)
     } else {
