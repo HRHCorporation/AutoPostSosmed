@@ -1,10 +1,13 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { Plus, BarChart3, Clock, CheckCircle2 } from 'lucide-react'
+import { SINGLE_USER_ID } from '@/config/auth'
 
 export default async function DashboardPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+
+  // Using hardcoded user ID - no authentication required
+  const userId = SINGLE_USER_ID
 
   // Fetch quick stats
   // In a real scenario we'd do aggregation queries
@@ -13,7 +16,7 @@ export default async function DashboardPage() {
   const { count: publishedCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('status', 'published')
 
   // Check if LinkedIn is connected
-  const { data: accounts } = await supabase.from('social_accounts').select('id').eq('user_id', user?.id).limit(1)
+  const { data: accounts } = await supabase.from('social_accounts').select('id').eq('user_id', userId).limit(1)
   const isLinkedInConnected = accounts && accounts.length > 0
 
   return (

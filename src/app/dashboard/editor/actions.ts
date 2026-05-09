@@ -2,20 +2,19 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { SINGLE_USER_ID } from '@/config/auth'
 
 export async function getPostDraft(id: string) {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'Unauthorized' }
-  }
+  // Using hardcoded user ID - no authentication required
+  const userId = SINGLE_USER_ID
 
   const { data, error } = await supabase
     .from('posts')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single()
 
   if (error || !data) {
@@ -27,8 +26,8 @@ export async function getPostDraft(id: string) {
 }
 
 export async function savePostDraft(
-  contentHtml: string, 
-  contentText: string, 
+  contentHtml: string,
+  contentText: string,
   id?: string | null,
   visibility: 'PUBLIC' | 'CONNECTIONS' = 'PUBLIC',
   scheduledAt?: string | null
@@ -38,11 +37,9 @@ export async function savePostDraft(
   }
 
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'Unauthorized' }
-  }
+  // Using hardcoded user ID - no authentication required
+  const userId = SINGLE_USER_ID
 
   let scheduledDate = null
   if (scheduledAt) {
@@ -54,20 +51,20 @@ export async function savePostDraft(
   if (id) {
     const { error: updateError } = await supabase
       .from('posts')
-      .update({ 
+      .update({
         content: contentHtml,
         visibility: visibility,
         status: scheduledDate ? 'scheduled' : 'draft',
         scheduled_at: scheduledDate
       })
       .eq('id', id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
     error = updateError;
   } else {
     const { error: insertError } = await supabase
       .from('posts')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         content: contentHtml, // Storing HTML for Tiptap
         visibility: visibility,
         status: scheduledDate ? 'scheduled' : 'draft',
@@ -88,23 +85,23 @@ export async function savePostDraft(
 }
 
 export async function publishPostNow(
-  contentHtml: string, 
-  contentText: string, 
+  contentHtml: string,
+  contentText: string,
   visibility: 'PUBLIC' | 'CONNECTIONS',
   postId?: string | null
 ) {
   if (!contentText.trim()) return { error: 'Post content cannot be empty' }
 
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) return { error: 'Unauthorized' }
+  // Using hardcoded user ID - no authentication required
+  const userId = SINGLE_USER_ID
 
   // 1. Fetch LinkedIn Account Token & URN
   const { data: account, error: accError } = await supabase
     .from('social_accounts')
     .select('access_token, provider_account_id')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('provider', 'linkedin')
     .single()
 
@@ -155,15 +152,15 @@ export async function publishPostNow(
   // 3. Save as Published in DB
   const now = new Date().toISOString()
   if (postId) {
-    await supabase.from('posts').update({ 
+    await supabase.from('posts').update({
       content: contentHtml,
       status: 'published',
       visibility: visibility,
       published_at: now
-    }).eq('id', postId).eq('user_id', user.id)
+    }).eq('id', postId).eq('user_id', userId)
   } else {
     await supabase.from('posts').insert({
-      user_id: user.id,
+      user_id: userId,
       content: contentHtml,
       status: 'published',
       visibility: visibility,

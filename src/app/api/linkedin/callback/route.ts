@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { SINGLE_USER_ID } from '@/config/auth'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -16,11 +17,9 @@ export async function GET(req: Request) {
 
   try {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login`)
-    }
+    // Using hardcoded user ID - no authentication required
+    const userId = SINGLE_USER_ID
 
     const clientId = process.env.LINKEDIN_CLIENT_ID!
     const clientSecret = process.env.LINKEDIN_CLIENT_SECRET!
@@ -59,7 +58,7 @@ export async function GET(req: Request) {
       const { data: existing } = await supabase
         .from('social_accounts')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('provider', 'linkedin')
         .single();
 
@@ -75,7 +74,7 @@ export async function GET(req: Request) {
         dbError = error;
       } else {
         const { error } = await supabase.from('social_accounts').insert({
-          user_id: user.id,
+          user_id: userId,
           provider: 'linkedin',
           access_token: data.access_token,
           expires_at: expiresAt,
