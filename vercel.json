@@ -1,3 +1,0 @@
-{
-  "comment": "Cron disabled - using external cron service (cron-job.org) instead to avoid Vercel Hobby plan limitation"
-}
