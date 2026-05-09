@@ -39,11 +39,9 @@ export async function POST(req: Request) {
       
       // Safety fallback in case response.text is not a direct property or is undefined
       let finalResult = ''
-      if (typeof response.text === 'function') {
-        finalResult = response.text()
-      } else if (response.text) {
+      if (response.text) {
         finalResult = response.text
-      } else if (response.candidates && response.candidates[0]?.content?.parts[0]?.text) {
+      } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
         finalResult = response.candidates[0].content.parts[0].text
       } else {
         return NextResponse.json({ error: 'Unexpected response format from Gemini: ' + JSON.stringify(response) }, { status: 500 })
