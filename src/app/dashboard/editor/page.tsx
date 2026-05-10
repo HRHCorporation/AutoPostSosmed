@@ -6,8 +6,6 @@ import Editor from '@/components/Editor'
 import { Sparkles, Save, Send, CalendarIcon, Loader2, CheckCircle } from 'lucide-react'
 import { savePostDraft, getPostDraft, publishPostNow } from './actions'
 
-export const dynamic = 'force-dynamic'
-
 function EditorClient() {
   const searchParams = useSearchParams()
   const postId = searchParams.get('id')
