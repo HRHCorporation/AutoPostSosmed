@@ -2,19 +2,22 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { SINGLE_USER_ID } from '@/config/auth'
 
 export async function getPostDraft(id: string) {
   const supabase = createClient()
 
-  // Using hardcoded user ID - no authentication required
-  const userId = SINGLE_USER_ID
+  // Get authenticated user
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'Not authenticated' }
+  }
 
   const { data, error } = await supabase
     .from('posts')
     .select('*')
     .eq('id', id)
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .single()
 
   if (error || !data) {
@@ -38,8 +41,12 @@ export async function savePostDraft(
 
   const supabase = createClient()
 
-  // Using hardcoded user ID - no authentication required
-  const userId = SINGLE_USER_ID
+  // Get authenticated user
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'Not authenticated' }
+  }
 
   let scheduledDate = null
   if (scheduledAt) {
@@ -58,13 +65,13 @@ export async function savePostDraft(
         scheduled_at: scheduledDate
       })
       .eq('id', id)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
     error = updateError;
   } else {
     const { error: insertError } = await supabase
       .from('posts')
       .insert({
-        user_id: userId,
+        user_id: user.id,
         content: contentHtml, // Storing HTML for Tiptap
         visibility: visibility,
         status: scheduledDate ? 'scheduled' : 'draft',
@@ -80,7 +87,7 @@ export async function savePostDraft(
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/posts')
-  
+
   return { success: true, postId: id } // Note: Need to return ID so we can publish if it was just created
 }
 
@@ -94,14 +101,18 @@ export async function publishPostNow(
 
   const supabase = createClient()
 
-  // Using hardcoded user ID - no authentication required
-  const userId = SINGLE_USER_ID
+  // Get authenticated user
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'Not authenticated' }
+  }
 
   // 1. Fetch LinkedIn Account Token & URN
   const { data: account, error: accError } = await supabase
     .from('social_accounts')
     .select('access_token, provider_account_id')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .eq('provider', 'linkedin')
     .single()
 
@@ -112,7 +123,7 @@ export async function publishPostNow(
   // 2. Publish to LinkedIn API v2/ugcPosts
   try {
     const urn = `urn:li:person:${account.provider_account_id}`
-    
+
     // We only send text for now. If there were images, we'd need to upload them first.
     const linkedInResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
@@ -157,10 +168,10 @@ export async function publishPostNow(
       status: 'published',
       visibility: visibility,
       published_at: now
-    }).eq('id', postId).eq('user_id', userId)
+    }).eq('id', postId).eq('user_id', user.id)
   } else {
     await supabase.from('posts').insert({
-      user_id: userId,
+      user_id: user.id,
       content: contentHtml,
       status: 'published',
       visibility: visibility,

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { SINGLE_USER_ID } from '@/config/auth'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -18,8 +17,14 @@ export async function GET(req: Request) {
   try {
     const supabase = createClient()
 
-    // Using hardcoded user ID - no authentication required
-    const userId = SINGLE_USER_ID
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login?error=not_authenticated`)
+    }
+
+    const userId = user.id
 
     const clientId = process.env.LINKEDIN_CLIENT_ID!
     const clientSecret = process.env.LINKEDIN_CLIENT_SECRET!
