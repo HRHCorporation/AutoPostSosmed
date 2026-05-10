@@ -1,12 +1,19 @@
 import Link from 'next/link'
 import { LayoutDashboard, PenSquare, Clock, CheckCircle, Settings, LogOut } from 'lucide-react'
+import { createClient } from '@/utils/supabase/server'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Authentication disabled - direct access allowed
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
 
   return (
     <div className="min-h-screen flex text-foreground">
