@@ -1,19 +1,27 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { Plus, BarChart3, Clock, CheckCircle2 } from 'lucide-react'
+import { redirect } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   const supabase = createClient()
+
+  // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Fetch quick stats
-  // In a real scenario we'd do aggregation queries
-  const { count: draftCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('status', 'draft')
-  const { count: scheduledCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('status', 'scheduled')
-  const { count: publishedCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('status', 'published')
+  if (!user) {
+    redirect('/login')
+  }
+
+  // Fetch quick stats for current user
+  const { count: draftCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'draft')
+  const { count: scheduledCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'scheduled')
+  const { count: publishedCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'published')
 
   // Check if LinkedIn is connected
-  const { data: accounts } = await supabase.from('social_accounts').select('id').eq('user_id', user?.id).limit(1)
+  const { data: accounts } = await supabase.from('social_accounts').select('id').eq('user_id', user.id).eq('provider', 'linkedin').limit(1)
   const isLinkedInConnected = accounts && accounts.length > 0
 
   return (

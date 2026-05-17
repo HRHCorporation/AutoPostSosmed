@@ -16,11 +16,15 @@ export async function GET(req: Request) {
 
   try {
     const supabase = createClient()
+
+    // Get authenticated user
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login`)
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login?error=not_authenticated`)
     }
+
+    const userId = user.id
 
     const clientId = process.env.LINKEDIN_CLIENT_ID!
     const clientSecret = process.env.LINKEDIN_CLIENT_SECRET!
@@ -59,7 +63,7 @@ export async function GET(req: Request) {
       const { data: existing } = await supabase
         .from('social_accounts')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('provider', 'linkedin')
         .single();
 
@@ -75,7 +79,7 @@ export async function GET(req: Request) {
         dbError = error;
       } else {
         const { error } = await supabase.from('social_accounts').insert({
-          user_id: user.id,
+          user_id: userId,
           provider: 'linkedin',
           access_token: data.access_token,
           expires_at: expiresAt,

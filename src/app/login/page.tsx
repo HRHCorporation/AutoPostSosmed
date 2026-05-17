@@ -32,7 +32,7 @@ export default function LoginPage({
           placeholder="••••••••"
           required
         />
-        
+
         <button
           formAction={login}
           className="bg-primary-600 hover:bg-primary-700 rounded-xl px-4 py-3 text-white font-medium mb-2 transition-colors shadow-lg shadow-primary-500/30"

@@ -1,17 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
 import { GoogleGenAI } from '@google/genai'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
   try {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Authentication disabled - no user check required
 
     const { prompt, type } = await req.json()
 
@@ -39,11 +33,9 @@ export async function POST(req: Request) {
       
       // Safety fallback in case response.text is not a direct property or is undefined
       let finalResult = ''
-      if (typeof response.text === 'function') {
-        finalResult = response.text()
-      } else if (response.text) {
+      if (response.text) {
         finalResult = response.text
-      } else if (response.candidates && response.candidates[0]?.content?.parts[0]?.text) {
+      } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
         finalResult = response.candidates[0].content.parts[0].text
       } else {
         return NextResponse.json({ error: 'Unexpected response format from Gemini: ' + JSON.stringify(response) }, { status: 500 })

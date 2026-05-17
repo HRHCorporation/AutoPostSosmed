@@ -5,10 +5,12 @@ import { revalidatePath } from 'next/cache'
 
 export async function getPostDraft(id: string) {
   const supabase = createClient()
+
+  // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return { error: 'Unauthorized' }
+    return { error: 'Not authenticated' }
   }
 
   const { data, error } = await supabase
@@ -27,8 +29,8 @@ export async function getPostDraft(id: string) {
 }
 
 export async function savePostDraft(
-  contentHtml: string, 
-  contentText: string, 
+  contentHtml: string,
+  contentText: string,
   id?: string | null,
   visibility: 'PUBLIC' | 'CONNECTIONS' = 'PUBLIC',
   scheduledAt?: string | null
@@ -38,10 +40,12 @@ export async function savePostDraft(
   }
 
   const supabase = createClient()
+
+  // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return { error: 'Unauthorized' }
+    return { error: 'Not authenticated' }
   }
 
   let scheduledDate = null
@@ -54,7 +58,7 @@ export async function savePostDraft(
   if (id) {
     const { error: updateError } = await supabase
       .from('posts')
-      .update({ 
+      .update({
         content: contentHtml,
         visibility: visibility,
         status: scheduledDate ? 'scheduled' : 'draft',
@@ -83,22 +87,26 @@ export async function savePostDraft(
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/posts')
-  
+
   return { success: true, postId: id } // Note: Need to return ID so we can publish if it was just created
 }
 
 export async function publishPostNow(
-  contentHtml: string, 
-  contentText: string, 
+  contentHtml: string,
+  contentText: string,
   visibility: 'PUBLIC' | 'CONNECTIONS',
   postId?: string | null
 ) {
   if (!contentText.trim()) return { error: 'Post content cannot be empty' }
 
   const supabase = createClient()
+
+  // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) return { error: 'Unauthorized' }
+  if (!user) {
+    return { error: 'Not authenticated' }
+  }
 
   // 1. Fetch LinkedIn Account Token & URN
   const { data: account, error: accError } = await supabase
@@ -115,7 +123,7 @@ export async function publishPostNow(
   // 2. Publish to LinkedIn API v2/ugcPosts
   try {
     const urn = `urn:li:person:${account.provider_account_id}`
-    
+
     // We only send text for now. If there were images, we'd need to upload them first.
     const linkedInResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
@@ -155,7 +163,7 @@ export async function publishPostNow(
   // 3. Save as Published in DB
   const now = new Date().toISOString()
   if (postId) {
-    await supabase.from('posts').update({ 
+    await supabase.from('posts').update({
       content: contentHtml,
       status: 'published',
       visibility: visibility,

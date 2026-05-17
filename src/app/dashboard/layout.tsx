@@ -1,7 +1,7 @@
 import Link from 'next/link'
+import { LayoutDashboard, PenSquare, Clock, CheckCircle, Settings, LogOut } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { LayoutDashboard, PenSquare, Clock, CheckCircle, Settings, LogOut } from 'lucide-react'
 
 export default async function DashboardLayout({
   children,

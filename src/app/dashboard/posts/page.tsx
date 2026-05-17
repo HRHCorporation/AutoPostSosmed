@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
+import { redirect } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
 
 export default async function PostsPage({
   searchParams,
@@ -11,9 +14,17 @@ export default async function PostsPage({
   const supabase = createClient()
   const status = searchParams.status || 'draft'
 
+  // Get authenticated user
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
   const { data: posts } = await supabase
     .from('posts')
     .select('*')
+    .eq('user_id', user.id)
     .eq('status', status)
     .order('created_at', { ascending: false })
 
