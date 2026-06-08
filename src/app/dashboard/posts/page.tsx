@@ -1,8 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import { deletePost } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +65,7 @@ export default async function PostsPage({
 
       <div className="space-y-4">
         {posts && posts.length > 0 ? (
-          posts.map((post) => (
+          posts.map((post: any) => (
             <div key={post.id} className="glass-card p-6 flex flex-col md:flex-row gap-4 justify-between transition-all hover:bg-white/90 dark:hover:bg-[#1a1a24]/90 hover:shadow-2xl">
               <div className="flex-1 min-w-0">
                 <div className="prose prose-sm dark:prose-invert max-w-none line-clamp-2 text-gray-200" dangerouslySetInnerHTML={{ __html: post.content || '<em>Empty draft</em>' }} />
@@ -78,6 +79,15 @@ export default async function PostsPage({
                 <Link href={`/dashboard/editor?id=${post.id}`} className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(10,102,194,0.4)] hover:shadow-[0_0_20px_rgba(0,212,255,0.4)]">
                   {status === 'published' ? 'View' : 'Edit'}
                 </Link>
+                <form action={async () => { 'use server'; await deletePost(post.id) }}>
+                  <button
+                    type="submit"
+                    className="p-2.5 rounded-xl bg-red-900/20 hover:bg-red-900/40 border border-red-500/20 hover:border-red-500/50 text-red-400 hover:text-red-300 transition-all"
+                    title="Delete post"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </form>
               </div>
             </div>
           ))

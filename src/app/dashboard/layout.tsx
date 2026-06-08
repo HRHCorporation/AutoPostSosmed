@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LayoutDashboard, PenSquare, Clock, CheckCircle, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, PenSquare, Clock, CheckCircle, Settings, LogOut, Zap } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -41,6 +41,10 @@ export default async function DashboardLayout({
           <Link href="/dashboard/posts?status=published" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/40 dark:hover:bg-primary-900/40 hover:shadow-[0_0_15px_rgba(10,102,194,0.3)] transition-all text-sm font-medium border border-transparent hover:border-white/50 dark:hover:border-primary-500/30 group">
             <CheckCircle size={20} className="text-gray-500 group-hover:text-primary-600 dark:group-hover:text-neon-blue transition-colors" />
             <span className="group-hover:text-primary-800 dark:group-hover:text-white transition-colors">Published</span>
+          </Link>
+          <Link href="/dashboard/automation" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/40 dark:hover:bg-primary-900/40 hover:shadow-[0_0_15px_rgba(10,102,194,0.3)] transition-all text-sm font-medium border border-transparent hover:border-white/50 dark:hover:border-primary-500/30 group">
+            <Zap size={20} className="text-gray-500 group-hover:text-primary-600 dark:group-hover:text-neon-blue transition-colors" />
+            <span className="group-hover:text-primary-800 dark:group-hover:text-white transition-colors">Automation</span>
           </Link>
           <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/40 dark:hover:bg-primary-900/40 hover:shadow-[0_0_15px_rgba(10,102,194,0.3)] transition-all text-sm font-medium border border-transparent hover:border-white/50 dark:hover:border-primary-500/30 group">
             <Settings size={20} className="text-gray-500 group-hover:text-primary-600 dark:group-hover:text-neon-blue transition-colors" />

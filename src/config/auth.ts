@@ -1,2 +1,2 @@
-// Authentication enabled - users must login with Supabase Auth
-export const AUTH_ENABLED = true
+// Authentication disabled — using local PostgreSQL with SINGLE_USER mode
+export const AUTH_ENABLED = false

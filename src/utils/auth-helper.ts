@@ -1,7 +1,5 @@
-// Authentication helper - Single user mode
-// No authentication required, returns hardcoded user ID
-
-import { SINGLE_USER_ID } from '@/config/auth'
+// Authentication helper — Single user mode, no auth required
+import { SINGLE_USER_ID } from '@/lib/db'
 
 export function getSingleUserId() {
   return SINGLE_USER_ID
